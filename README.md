@@ -5,9 +5,9 @@ This repository contains the source code, simulations, and documentation for a p
 ---
 
 ## Team Members
-- [@Siddique Ali Khan](https://github.com/siddiquealikhan)
-- [@Abdul Samad](https://github.com/Samad1909)
-- [@Mohammed Anzal A](https://github.com/Anzal13)
+- [Siddique Ali Khan](https://github.com/siddiquealikhan)
+- [Abdul Samad](https://github.com/Samad1909)
+- [Mohammed Anzal A](https://github.com/Anzal13)
 
 ---
 
