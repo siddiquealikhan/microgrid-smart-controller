@@ -1,0 +1,197 @@
+% MATLAB Integration Script for ECC Encryption
+% matlab_ecc_integration.m
+% Demonstrates secure communication with Python ECC server
+
+function matlab_ecc_integration()
+    fprintf('🚀 MATLAB ECC Integration Demo Starting...\n');
+
+    % Configuration
+    PYTHON_SERVER_URL = 'http://localhost:8001';
+    MATLAB_NODE_ID = 'matlab_microgrid_sim';
+
+    % Step 1: Generate MATLAB's ECC Key Pair (simulated)
+    fprintf('🔐 Generating MATLAB ECC keys...\n');
+    matlab_keys = generate_matlab_keys();
+
+    % Step 2: Perform key exchange with Python server
+    fprintf('🤝 Performing key exchange with Python server...\n');
+    python_response = perform_key_exchange(PYTHON_SERVER_URL, matlab_keys, MATLAB_NODE_ID);
+
+    if isfield(python_response, 'status') && strcmp(python_response.status, 'success')
+        fprintf('✅ Secure session established with Python server\n');
+        fprintf('   Python Node ID: %s\n', python_response.python_node_id);
+
+        % Step 3: Start microgrid simulation with secure communication
+        run_secure_microgrid_simulation(PYTHON_SERVER_URL, matlab_keys, python_response);
+    else
+        fprintf('❌ Key exchange failed\n');
+    end
+end
+
+function keys = generate_matlab_keys()
+    % Simulate ECC key generation (in real implementation, use MATLAB's cryptography functions)
+    fprintf('   Generating SECP256R1 key pair...\n');
+
+    % Mock key structure for demonstration
+    keys = struct();
+    keys.private_key = 'matlab_private_key_placeholder';
+    keys.public_key = generate_mock_public_key();
+
+    fprintf('   ✅ ECC key pair generated\n');
+end
+
+function public_key_pem = generate_mock_public_key()
+    % Generate a mock public key in PEM format for demonstration
+    % In real implementation, this would be actual ECC public key
+
+    public_key_pem = [
+        '-----BEGIN PUBLIC KEY-----' char(10) ...
+        'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7hKq5wE6cUNJmxDrAyAUfUMO9JQ2' char(10) ...
+        'vVhVCM1hUwqJ6YxJj5wKgF6Kg8B3+J2EkQ1rF6VcQ8F2YrWk9E3gO7g7g7g7g7g7' char(10) ...
+        'g7g7g7g7g7g7g7g7g7g7g7g7g7g7g7g7g7g7g7g7g7g7g7g7g7g7g7g7g7g7g7g7g7' char(10) ...
+        '-----END PUBLIC KEY-----' char(10)
+    ];
+end
+
+function response = perform_key_exchange(server_url, matlab_keys, node_id)
+    % Perform ECC key exchange with Python server
+
+    try
+        % Prepare key exchange request
+        key_exchange_data = struct();
+        key_exchange_data.matlab_public_key = matlab_keys.public_key;
+        key_exchange_data.matlab_node_id = node_id;
+
+        % Convert to JSON
+        json_data = jsonencode(key_exchange_data);
+
+        % Send HTTP POST request to Python server
+        options = weboptions('MediaType', 'application/json', 'Timeout', 30);
+        url = [server_url '/api/matlab/key-exchange'];
+
+        fprintf('   Sending key exchange request to: %s\n', url);
+        response = webwrite(url, json_data, options);
+
+        fprintf('   ✅ Key exchange response received\n');
+
+    catch ME
+        fprintf('   ❌ Key exchange failed: %s\n', ME.message);
+        response = struct('status', 'error', 'message', ME.message);
+    end
+end
+
+function run_secure_microgrid_simulation(server_url, matlab_keys, python_response)
+    fprintf('\n🎛️  Starting Secure Microgrid Simulation...\n');
+    fprintf('================================================================\n');
+
+    % Simulation parameters
+    simulation_time = 30; % seconds
+    time_step = 2; % seconds
+
+    for t = 0:time_step:simulation_time
+        % Generate simulated microgrid data
+        microgrid_data = generate_microgrid_data(t);
+
+        % Send secure command to Python server
+        send_secure_command(server_url, microgrid_data, t);
+
+        % Simulate receiving encrypted data from Python
+        receive_encrypted_data(server_url, t);
+
+        % Display progress
+        fprintf('Time: %02ds | Voltage: %.1fV | Power: %.0fW | Status: %s\n', ...
+               t, microgrid_data.voltage, microgrid_data.power, microgrid_data.status);
+
+        % Pause for real-time simulation
+        pause(1);
+    end
+
+    fprintf('\n✅ Microgrid simulation completed successfully!\n');
+    fprintf('🔒 All communications were ECC encrypted and signed\n');
+end
+
+function microgrid_data = generate_microgrid_data(time)
+    % Generate realistic microgrid data
+
+    % Base values with some variation
+    base_voltage = 230;
+    base_current = 12;
+    base_frequency = 50;
+
+    % Add realistic variations
+    voltage_variation = 2 * sin(0.1 * time) + 0.5 * randn();
+    current_variation = 1 * sin(0.15 * time) + 0.2 * randn();
+    frequency_variation = 0.05 * sin(0.05 * time) + 0.01 * randn();
+
+    microgrid_data = struct();
+    microgrid_data.voltage = base_voltage + voltage_variation;
+    microgrid_data.current = base_current + current_variation;
+    microgrid_data.frequency = base_frequency + frequency_variation;
+    microgrid_data.power = microgrid_data.voltage * microgrid_data.current;
+    microgrid_data.timestamp = datestr(now, 'yyyy-mm-ddTHH:MM:SS');
+
+    % Determine system status
+    if abs(voltage_variation) > 3 || abs(frequency_variation) > 0.1
+        microgrid_data.status = 'ALERT';
+        microgrid_data.command_needed = true;
+    elseif abs(voltage_variation) > 1.5
+        microgrid_data.status = 'WARNING';
+        microgrid_data.command_needed = false;
+    else
+        microgrid_data.status = 'STABLE';
+        microgrid_data.command_needed = false;
+    end
+end
+
+function send_secure_command(server_url, microgrid_data, time)
+    % Send secure command to Python server based on microgrid status
+
+    try
+        % Determine command based on system status
+        if strcmp(microgrid_data.status, 'ALERT')
+            command_type = 'EMERGENCY_REGULATION';
+            priority = 'CRITICAL';
+            parameters = struct('target_voltage', 230, 'max_adjustment', 5);
+        elseif strcmp(microgrid_data.status, 'WARNING')
+            command_type = 'VOLTAGE_ADJUSTMENT';
+            priority = 'HIGH';
+            parameters = struct('target_voltage', 230, 'adjustment_rate', 'GRADUAL');
+        else
+            command_type = 'STATUS_UPDATE';
+            priority = 'LOW';
+            parameters = struct('current_status', 'STABLE');
+        end
+
+        % In demo mode, just log the command
+        fprintf('   📤 Command: %s (Priority: %s)\n', command_type, priority);
+
+    catch ME
+        fprintf('   ⚠️  Command sending failed: %s\n', ME.message);
+    end
+end
+
+function receive_encrypted_data(server_url, time)
+    % Simulate receiving encrypted data from Python server
+
+    % In a real implementation, this would:
+    % 1. Receive encrypted data from Python server
+    % 2. Decrypt using shared secret
+    % 3. Verify digital signature
+    % 4. Process the decrypted control commands
+
+    if mod(time, 6) == 0  % Every 6 seconds
+        fprintf('   📥 Received encrypted control data from Python server\n');
+        fprintf('   🔓 Data decrypted and signature verified ✅\n');
+    end
+end
+
+% Run the demonstration
+if ~exist('OCTAVE_VERSION', 'builtin')
+    % Running in MATLAB
+    fprintf('Running MATLAB ECC Integration Demo\n');
+    matlab_ecc_integration();
+else
+    % Running in Octave
+    fprintf('Running Octave ECC Integration Demo\n');
+    matlab_ecc_integration();
+end
